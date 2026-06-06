@@ -3,6 +3,7 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/rps", "destination": "/rps/index.html" }
+    { "source": "/rps", "destination": "/rps/index.html" },
+    { "source": "/tic-tac-toe", "destination": "/tic-tac-toe/index.html" }
   ]
 }

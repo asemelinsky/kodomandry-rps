@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Хрестики Нулики — мережева гра</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E❌%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;500&family=Syne:wght@600;800&family=Instrument+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f1a;
+    --bg2: #111623;
+    --bg3: #161c2e;
+    --border: #1e2740;
+    --border2: #2a3555;
+    --text: #e8eaf0;
+    --text2: #8892aa;
+    --text3: #5a6480;
+    --accent: #f0a500;
+    --x: #5b8dee;
+    --o: #3dd9b3;
+    --tie: #a586d6;
+    --error: #e05252;
+    --win: #f0a500;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Instrument Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+  }
+  .topbar {
+    width: 100%;
+    max-width: 460px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+  }
+  .topbar a {
+    color: var(--text3);
+    text-decoration: none;
+  }
+  .topbar a:hover { color: var(--accent); }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin: 8px 0 4px;
+    text-align: center;
+  }
+  .sub {
+    color: var(--text2);
+    font-size: 12px;
+    margin-bottom: 18px;
+    font-family: 'DM Mono', monospace;
+    text-align: center;
+  }
+  .sub code {
+    background: var(--bg3);
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: var(--accent);
+  }
+
+  /* — name entry — */
+  .name-entry {
+    width: 100%;
+    max-width: 380px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 20px;
+    margin-top: 30px;
+    text-align: center;
+  }
+  .name-entry h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    margin-bottom: 14px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+  }
+  .name-entry input {
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 15px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .name-entry input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .name-entry button {
+    width: 100%;
+    padding: 11px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .name-entry button:hover { opacity: .9; }
+  .name-entry .hint {
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 10px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* — game area — */
+  .game {
+    width: 100%;
+    max-width: 460px;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+  }
+  .game.active { display: flex; }
+
+  .scoreboard {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .score-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 6px;
+    text-align: center;
+  }
+  .score-card.mine { border-color: var(--accent); }
+  .score-card .name {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .score-card .mark {
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .score-card .mark.x { color: var(--x); }
+  .score-card .mark.o { color: var(--o); }
+  .score-card .mark.tie { color: var(--tie); }
+  .score-card .val {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 26px;
+    color: var(--text);
+    margin-top: 4px;
+  }
+
+  .status-bar {
+    width: 100%;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    text-align: center;
+    font-size: 14px;
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .status-bar.your-turn {
+    background: rgba(240, 165, 0, .08);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .status-bar.waiting {
+    color: var(--text2);
+  }
+  .status-bar.over.win {
+    background: rgba(240, 165, 0, .1);
+    border-color: var(--win);
+    color: var(--win);
+    font-weight: 700;
+  }
+  .status-bar.over.tie {
+    background: rgba(165, 134, 214, .1);
+    border-color: var(--tie);
+    color: var(--tie);
+    font-weight: 600;
+  }
+  .status-bar.over.lose {
+    color: var(--text2);
+  }
+
+  /* — board — */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+    aspect-ratio: 1;
+    margin-bottom: 18px;
+  }
+  .cell {
+    background: var(--bg2);
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 64px;
+    cursor: pointer;
+    transition: background .15s, border-color .15s, transform .1s;
+    user-select: none;
+  }
+  .cell.empty.can-move:hover {
+    background: var(--bg3);
+    border-color: var(--border2);
+  }
+  .cell.empty:not(.can-move) {
+    cursor: not-allowed;
+  }
+  .cell.x { color: var(--x); }
+  .cell.o { color: var(--o); }
+  .cell.win-cell {
+    border-color: var(--win);
+    background: rgba(240, 165, 0, .08);
+  }
+  @media (max-width: 380px) {
+    .cell { font-size: 48px; }
+  }
+
+  .controls {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  button.ctrl {
+    background: var(--bg2);
+    color: var(--text);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 9px 14px;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    cursor: pointer;
+    transition: background .15s, border-color .15s;
+  }
+  button.ctrl:hover {
+    background: var(--bg3);
+    border-color: var(--accent);
+  }
+  button.ctrl.primary {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+  button.ctrl.primary:hover {
+    opacity: .9;
+  }
+  button.ctrl.danger {
+    color: var(--error);
+    border-color: var(--border);
+  }
+  button.ctrl.danger:hover {
+    background: rgba(224, 82, 82, .08);
+    border-color: var(--error);
+  }
+
+  .footer {
+    margin-top: 24px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    text-align: center;
+    line-height: 1.6;
+  }
+  .footer code {
+    background: var(--bg3);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--text2);
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/">← усі ігри</a>
+  <span>кімната: <code style="background:var(--bg3);padding:1px 6px;border-radius:3px;color:var(--accent)" id="room-id">default</code></span>
+</div>
+
+<h1>❌⭕ Хрестики Нулики</h1>
+<div class="sub">додай <code>?room=ваш-код</code> для приватної кімнати</div>
+
+<!-- name entry screen -->
+<div class="name-entry" id="name-entry">
+  <h2>Як тебе звати?</h2>
+  <input type="text" id="name-input" placeholder="Твоє ім'я" maxlength="16" autofocus>
+  <button id="join-btn">Увійти у гру</button>
+  <div class="hint">перший гравець = X, другий = O</div>
+</div>
+
+<!-- main game -->
+<div class="game" id="game">
+  <div class="scoreboard">
+    <div class="score-card" id="p1-card">
+      <div class="name" id="p1-name">P1</div>
+      <div class="mark x">X</div>
+      <div class="val" id="p1-score">0</div>
+    </div>
+    <div class="score-card">
+      <div class="name">Нічиї</div>
+      <div class="mark tie">tie</div>
+      <div class="val" id="tie-score">0</div>
+    </div>
+    <div class="score-card" id="p2-card">
+      <div class="name" id="p2-name">P2</div>
+      <div class="mark o">O</div>
+      <div class="val" id="p2-score">0</div>
+    </div>
+  </div>
+
+  <div class="status-bar" id="status-bar">Завантаження…</div>
+
+  <div class="board" id="board">
+    <!-- 9 cells -->
+  </div>
+
+  <div class="controls">
+    <button class="ctrl primary" id="next-btn" style="display:none">▶ Ще раунд</button>
+    <button class="ctrl" id="reset-btn">↻ Скинути рахунок</button>
+    <button class="ctrl danger" id="leave-btn">Покинути</button>
+  </div>
+</div>
+
+<div class="footer">
+  раунд <span id="round-n">1</span> · </span>
+</div>
+
+<script>
+  const ROOM = (new URLSearchParams(location.search).get('room') || 'default').slice(0, 40);
+  document.getElementById('room-id').textContent = ROOM;
+
+  const PLAYER_ID_KEY = 'ttt-player-id';
+  let playerId = localStorage.getItem(PLAYER_ID_KEY);
+  if (!playerId) {
+    playerId = 'p_' + Math.random().toString(36).slice(2, 12);
+    localStorage.setItem(PLAYER_ID_KEY, playerId);
+  }
+  let mySlot = null;
+  let myName = localStorage.getItem('ttt-name') || '';
+  let lastState = null;
+  let pollTimer = null;
+
+  const nameEntryEl = document.getElementById('name-entry');
+  const gameEl = document.getElementById('game');
+  const nameInput = document.getElementById('name-input');
+  const joinBtn = document.getElementById('join-btn');
+  const statusBar = document.getElementById('status-bar');
+  const boardEl = document.getElementById('board');
+  const nextBtn = document.getElementById('next-btn');
+  const resetBtn = document.getElementById('reset-btn');
+  const leaveBtn = document.getElementById('leave-btn');
+  const roundN = document.getElementById('round-n');
+
+  if (myName) nameInput.value = myName;
+
+  async function api(method, body = null) {
+    const url = `/api/tictactoe?room=${encodeURIComponent(ROOM)}`;
+    const opts = { method, headers: {} };
+    if (body) {
+      opts.headers['Content-Type'] = 'application/json';
+      opts.body = JSON.stringify({ ...body, playerId });
+    }
+    const res = await fetch(url, opts);
+    return res.json();
+  }
+
+  // Build empty board
+  for (let i = 0; i < 9; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell empty';
+    cell.dataset.idx = i;
+    cell.addEventListener('click', () => onCellClick(i));
+    boardEl.appendChild(cell);
+  }
+  const cells = Array.from(boardEl.children);
+
+  async function onCellClick(idx) {
+    if (!lastState || lastState.winner || lastState.board[idx] !== null) return;
+    if (lastState.turn !== mySlot) return;
+    if (!lastState.p1 || !lastState.p2) return;
+    // optimistic disable
+    cells[idx].classList.remove('can-move');
+    const r = await api('POST', { action: 'move', idx });
+    if (r.ok) {
+      lastState = r.state;
+      render();
+    } else if (r.state) {
+      lastState = r.state;
+      render();
+    }
+  }
+
+  joinBtn.addEventListener('click', joinGame);
+  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') joinGame(); });
+
+  async function joinGame() {
+    const name = (nameInput.value || '').trim().slice(0, 16) || 'Гравець';
+    myName = name;
+    localStorage.setItem('ttt-name', name);
+    const r = await api('POST', { action: 'join', name });
+    if (r.ok) {
+      mySlot = r.slot;
+      lastState = r.state;
+      nameEntryEl.style.display = 'none';
+      gameEl.classList.add('active');
+      render();
+      startPolling();
+    }
+  }
+
+  nextBtn.addEventListener('click', async () => {
+    const r = await api('POST', { action: 'next' });
+    if (r.ok) { lastState = r.state; render(); }
+  });
+  resetBtn.addEventListener('click', async () => {
+    if (!confirm('Скинути рахунок на 0:0?')) return;
+    const r = await api('POST', { action: 'reset' });
+    if (r.ok) { lastState = r.state; render(); }
+  });
+  leaveBtn.addEventListener('click', async () => {
+    if (!confirm('Покинути гру? Інша людина зможе зайти на твоє місце.')) return;
+    stopPolling();
+    await api('POST', { action: 'leave' });
+    mySlot = null;
+    gameEl.classList.remove('active');
+    nameEntryEl.style.display = 'block';
+  });
+
+  function startPolling() {
+    stopPolling();
+    pollTimer = setInterval(async () => {
+      const r = await api('GET');
+      if (r.ok) {
+        lastState = r.state;
+        // re-affirm slot
+        if (lastState.p1?.id === playerId) mySlot = 'p1';
+        else if (lastState.p2?.id === playerId) mySlot = 'p2';
+        else mySlot = 'observer';
+        render();
+      }
+    }, 1500);
+  }
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+  function render() {
+    if (!lastState) return;
+    const s = lastState;
+
+    // Score & names
+    const p1Card = document.getElementById('p1-card');
+    const p2Card = document.getElementById('p2-card');
+    document.getElementById('p1-name').textContent = s.p1?.name || '—';
+    document.getElementById('p2-name').textContent = s.p2?.name || '—';
+    document.getElementById('p1-score').textContent = s.score.p1;
+    document.getElementById('p2-score').textContent = s.score.p2;
+    document.getElementById('tie-score').textContent = s.score.tie;
+    p1Card.classList.toggle('mine', mySlot === 'p1');
+    p2Card.classList.toggle('mine', mySlot === 'p2');
+
+    // Board
+    for (let i = 0; i < 9; i++) {
+      const cell = cells[i];
+      const v = s.board[i];
+      cell.textContent = v || '';
+      cell.classList.toggle('x', v === 'X');
+      cell.classList.toggle('o', v === 'O');
+      cell.classList.toggle('empty', v === null);
+      cell.classList.toggle('can-move',
+        v === null && !s.winner && s.turn === mySlot && s.p1 && s.p2);
+      cell.classList.toggle('win-cell', s.winLine && s.winLine.includes(i));
+    }
+
+    // Status bar
+    statusBar.className = 'status-bar';
+    if (!s.p2 && mySlot === 'p1') {
+      statusBar.textContent = '⏳ Чекаємо другого гравця…';
+      statusBar.classList.add('waiting');
+    } else if (!s.p1) {
+      statusBar.textContent = '⏳ Чекаємо першого гравця…';
+      statusBar.classList.add('waiting');
+    } else if (s.winner === 'tie') {
+      statusBar.textContent = '🤝 Нічия!';
+      statusBar.classList.add('over', 'tie');
+    } else if (s.winner) {
+      const winName = s[s.winner]?.name || '?';
+      if (s.winner === mySlot) {
+        statusBar.textContent = `🏆 Ти переміг! (${winName})`;
+        statusBar.classList.add('over', 'win');
+      } else if (mySlot === 'observer') {
+        statusBar.textContent = `🏆 Виграв ${winName}`;
+        statusBar.classList.add('over', 'win');
+      } else {
+        statusBar.textContent = `💀 Програв. Виграв ${winName}`;
+        statusBar.classList.add('over', 'lose');
+      }
+    } else if (mySlot === 'observer') {
+      const turnName = s[s.turn]?.name || '?';
+      statusBar.textContent = `👀 Дивишся. Хід: ${turnName}`;
+      statusBar.classList.add('waiting');
+    } else if (s.turn === mySlot) {
+      const mark = mySlot === 'p1' ? 'X' : 'O';
+      statusBar.textContent = `▶ Твій хід — постав ${mark}`;
+      statusBar.classList.add('your-turn');
+    } else {
+      const opName = (mySlot === 'p1' ? s.p2 : s.p1)?.name || '?';
+      statusBar.textContent = `⏳ Хід ${opName}…`;
+      statusBar.classList.add('waiting');
+    }
+
+    // Controls visibility
+    nextBtn.style.display = (s.winner && (mySlot === 'p1' || mySlot === 'p2')) ? 'inline-block' : 'none';
+    roundN.textContent = s.round;
+  }
+
+  // Auto-join якщо я уже в room (refresh page)
+  (async () => {
+    const r = await api('GET');
+    if (r.ok) {
+      lastState = r.state;
+      if (r.state.p1?.id === playerId || r.state.p2?.id === playerId) {
+        mySlot = r.state.p1?.id === playerId ? 'p1' : 'p2';
+        myName = (mySlot === 'p1' ? r.state.p1 : r.state.p2).name;
+        nameEntryEl.style.display = 'none';
+        gameEl.classList.add('active');
+        render();
+        startPolling();
+      }
+    }
+  })();
+</script>
+
+</body>
+</html>
