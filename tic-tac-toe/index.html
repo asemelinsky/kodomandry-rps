@@ -575,10 +575,14 @@
         myName = (mySlot === 'p1' ? r.state.p1 : r.state.p2).name;
         nameEntryEl.style.display = 'none';
         gameEl.classList.add('active');
-        render();
-        startPolling();
+      } else if (r.state.p1 && r.state.p2) {
+        mySlot = 'observer';
+        nameEntryEl.style.display = 'none';
+        gameEl.classList.add('active');
       }
+      render();
     }
+    startPolling();
   })();
 </script>
 

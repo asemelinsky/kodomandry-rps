@@ -561,7 +561,7 @@
     roundN.textContent = s.round;
   }
 
-  // Auto-rejoin якщо я уже у room
+  // Init: auto-rejoin / auto-observer + завжди стартуємо polling
   (async () => {
     const r = await api('GET');
     if (r.ok) {
@@ -571,10 +571,15 @@
         myName = (mySlot === 'p1' ? r.state.p1 : r.state.p2).name;
         nameEntryEl.style.display = 'none';
         gameEl.classList.add('active');
-        render();
-        startPolling();
+      } else if (r.state.p1 && r.state.p2) {
+        // Обидва слоти зайняті — глядач без потреби вводити імʼя
+        mySlot = 'observer';
+        nameEntryEl.style.display = 'none';
+        gameEl.classList.add('active');
       }
+      render();
     }
+    startPolling();
   })();
 </script>
 

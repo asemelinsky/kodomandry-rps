@@ -431,10 +431,9 @@
   async function pollOnce() {
     try {
       const { state } = await api('GET');
-      // detect зміни — render тільки якщо щось змінилось
       const changed = !lastState || JSON.stringify(state) !== JSON.stringify(lastState);
       lastState = state;
-      // якщо мене кікнуло (slot зник зі state) — re-join
+      // якщо мене кікнуло — re-join
       if (mySlot && mySlot !== 'observer') {
         if (state[mySlot]?.id !== playerId) {
           mySlot = null;
@@ -442,7 +441,12 @@
           return;
         }
       }
-      if (changed) render();
+      // якщо сижу на формі і обидва слоти зайняті — auto-observer
+      if (!mySlot && state.p1 && state.p2 && state.p1.id !== playerId && state.p2.id !== playerId) {
+        mySlot = 'observer';
+      }
+      // render тільки якщо в грі (гравець або спостерігач) — не перерисовуємо join-форму, щоб не змити ввід
+      if (mySlot && changed) render();
       setStatus('online', `онлайн · кімната «${ROOM}»`);
     } catch (e) {
       setStatus('error', 'офлайн · ' + e.message);
@@ -649,21 +653,22 @@
     return Math.random().toString(36).slice(2, 6);
   }
 
-  // init: спочатку pollOnce щоб дізнатись стан, потім join якщо треба
+  // init: auto-rejoin / auto-observer + завжди стартуємо polling
   (async () => {
     try {
       const { state } = await api('GET');
       lastState = state;
-      // якщо вже у грі (refresh) — продовжуємо
       if (state.p1?.id === playerId) mySlot = 'p1';
       else if (state.p2?.id === playerId) mySlot = 'p2';
+      else if (state.p1 && state.p2) mySlot = 'observer';
+
       if (mySlot) {
-        startPolling();
         render();
       } else {
         setStatus('online', `онлайн · кімната «${ROOM}»`);
         renderJoin();
       }
+      startPolling();
     } catch (e) {
       setStatus('error', 'не вдається підключитись: ' + e.message);
       renderJoin();
